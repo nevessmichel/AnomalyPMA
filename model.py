@@ -223,6 +223,8 @@ class PMA:
             self.__time += self.__interval
             # frames count increment
             self.__frames_count += 1
+            # start new frame count
+            self.__frame = 1
         # increment package in frame
         self.__frame += 1
 
