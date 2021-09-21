@@ -1,7 +1,7 @@
 import math
 
 class PMA:
-    def __init__(self, alertCallback, size=0, confidence = 0.92):
+    def __init__(self, alertCallback, size=0, confidence = 0.1):
         #alpha for prediction confidence
         self.__confidence_alpha = 1 - confidence
         # alert callback function
@@ -151,7 +151,7 @@ class PMA:
         # calculate new variance
         self.__calcVariance()
         #check if window is not empty
-        if(self.__avg != 0 and self.__avg_old != 0):
+        if(self.__avg != 0 and self.__avg_old != 0 and self.__variance != 0):
             direct = self.__avg / self.__avg_old
             inverse = self.__avg_old / self.__avg
             ratio = abs(direct - inverse)
@@ -163,6 +163,9 @@ class PMA:
                 # calculate max variance
                 variance_max = (self.__avg - min_frame) * \
                     (max_frame - self.__avg)
+
+                #print("________________________________________")
+                #print(self.__history)
                 # calculate volume to resize window
                 volume = variance_max / self.__variance
                 # calculate new window size
@@ -203,6 +206,10 @@ class PMA:
         self.__frames_count += 1
         # call anomaly test
         self.__anomaly()
+        # recalculate window and slide window
+        self.__slideWindow()
+        # start new frame count
+        self.__frame = 1
 
     # set initial value for time and interval
     def setStart(self, start_time, interval):

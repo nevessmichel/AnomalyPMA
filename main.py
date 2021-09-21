@@ -21,14 +21,13 @@ from arquive import Arquive
 # function to process frame status
 
 def frameFeedback(status, frame, predicted, time, interval):
-    file = sys.argv[1]
+    #get file name
+    file = sys.argv[2]
     #class to handle file connection
     arq = Arquive(file)
     #append data to file
     arq.append(f'{status},{frame},{predicted},{time},{interval}\n')
-    #print("___________________________")
-    #print("status: {} \nframe: {} \npredicted: {}".format(status, frame, predicted))
-
+    
 
 # function to handle tcpdump
 
@@ -37,14 +36,14 @@ def pcap(file_name):
     # size of window
     size = 10
     #interval in secs
-    interval = 5
+    interval = 60
     # initialize model
-    pma = PMA(frameFeedback, size)
+    pma = PMA(frameFeedback, size, sys.argv[1])
     # package counter
     count = 0
     # iterate in all packages as a vector of classes
     for (pkt_data, pkt_metadata,) in RawPcapReader(file_name):
-        #print("__________________________")
+        #Ethernet parser
         ether_pkt = Ether(pkt_data)
         #check if it's LLC protocol
         if 'type' not in ether_pkt.fields:
@@ -57,12 +56,11 @@ def pcap(file_name):
         #parse IPV4 package
         ip_pkt = ether_pkt[IP]
         # Ignore non-TCP packet
-        if ip_pkt.proto != 6:
+        if ip_pkt.proto != 17:
             # skip package
             continue
         # increment counter
         count += 1
-        #print(ip_pkt.dst)
         # verify if is first iteration
         if count == 1:
             # set model start time
@@ -71,11 +69,10 @@ def pcap(file_name):
         pma.packageIn(pkt_metadata.sec)
     # end model
     pma.stop()
-    #print('{} contains {} packets'.format(file_name, count))
 
 def showResults():
     #open PMA result file
-    arq = Arquive(sys.argv[1])
+    arq = Arquive(sys.argv[2])
     #read file lines
     lines = arq.readAllLines()
     #status vector
@@ -94,7 +91,9 @@ def showResults():
     lines.pop()
     #color dict to parse status to colors
     color_dict = {"higher": "red", "lower": "yellow", "normal": "green", "training": "black"}
+    #tuples of packages with higher status
     highers = []
+    #tuples of packages with lower status
     lowers = []
     #iterate all lines
     for line in lines:
@@ -116,9 +115,13 @@ def showResults():
         interval = int(interval)
         #increment count
         count += 1
+        #check if status is higher higher
         if(status == "higher"):
+            #append tuple frame start and end in format: DD/MO/YYYY HH:MI:SS
             highers.append((datetime.fromtimestamp(time).strftime("%d/%m/%Y %I:%M:%S"), datetime.fromtimestamp(time+interval).strftime("%Y-%m-%d %I:%M:%S")))
+        #check if status is higher higher
         if(status == "lower"):
+            #append tuple frame start and end in format: DD/MO/YYYY HH:MI:SS
             lowers.append((datetime.fromtimestamp(time).strftime("%d/%m/%Y %I:%M:%S"), datetime.fromtimestamp(time+interval).strftime("%Y-%m-%d %I:%M:%S")))
     
     #print alerts Lower
@@ -131,11 +134,11 @@ def showResults():
     #set subplot title
     ax1.set_title("Frames: Real vs Prediction")
     #plot frame data
-    ax1.plot(axis_x, frame_v, label='Real', color="black")
+    ax1.plot(axis_x, frame_v, label='Real', color="blue")
     #plot predictions
-    ax1.plot(axis_x, predict_v, label='Predicted', color = "blue")
+    ax1.plot(axis_x, predict_v, label='Predicted', color = "lightgreen")
     #create legend at lower right
-    ax1.legend(loc="lower right")
+    ax1.legend(loc="upper right")
 
     #set subplot title
     ax2.set_title("Frames: Status")
@@ -144,7 +147,7 @@ def showResults():
     #create matplot custom legend data by color vs status
     handles = [mpatches.Patch(color=v, label=k) for k,v in color_dict.items()]
     #create legend at lower right
-    ax2.legend(handles=handles, loc="lower right")
+    ax2.legend(handles=handles, loc="upper right")
     #set spacing between subplots
     fig.tight_layout()
     #show plot
@@ -154,20 +157,23 @@ def showResults():
 
 if ("__main__" == __name__):
     #check if no file is passed as arg
-    if(len(sys.argv) == 1):
+    if(len(sys.argv) <= 2):
+        #check if confidence is not an arg
+        if(len(sys.argv) == 1):
+            #append confidence
+            sys.argv.append(0.1)
+        else:
+            #cast confidence to fload
+            sys.argv[1] = float(sys.argv[1])
         #append default file as sys args
         sys.argv.append("PMA_result.txt")
     #check if file already exists
-    if os.path.exists(sys.argv[1]):
+    if os.path.exists(sys.argv[2]):
         #delete file
-        #os.remove(sys.argv[1])
-        pass
-    # files to test
-    files = ["Data/week4/monday.tcpdump"]
-    # iterate files
-    for f in files:
-        # call tcpdump handler
-        #pcap(f)
-        break
+        os.remove(sys.argv[2])
+    # file to test
+    file = "Data/week4/monday.tcpdump"
+    # process file
+    pcap(file)
     #show graphs
     showResults()
