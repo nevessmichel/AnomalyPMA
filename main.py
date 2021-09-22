@@ -55,7 +55,7 @@ def pcap(file_name):
             continue
         #parse IPV4 package
         ip_pkt = ether_pkt[IP]
-        # Ignore non-TCP packet
+        # Ignore non-UDP packet
         if ip_pkt.proto != 17:
             # skip package
             continue

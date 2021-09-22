@@ -11,3 +11,21 @@ There is some problems in the production version, which were corrected in develo
 - enter the folder: cd scapy
 
 - install: python setup.py install
+
+---
+
+# Entries
+
+It's possible to pass two params to pragram, confidance and output file, in this order.
+
+- param 1 - confidence (float), range [0;1]
+
+- param 2 - output file (string), don't recommend blank space character
+
+---
+
+# Video Test Case
+
+- confidence: 0.1
+
+- default output file (empty): PMA_result.txt
